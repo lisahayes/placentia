@@ -1,0 +1,7 @@
+# Clean URL redirects — Cloudflare Pages
+/services   /services/  301
+/locations  /locations/ 301
+/blog       /blog/      301
+/about      /about/     301
+/contact    /contact/   301
+/privacy    /privacy/   301

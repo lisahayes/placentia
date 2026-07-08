@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Leak Cost Calculator | Placentia Leak Repair Experts</title>
+<link rel="stylesheet" href="https://placentialeakrepairpros.com/css/style.css">
+<style>
+  body { margin:0; padding:0; background:transparent; font-family:system-ui,-apple-system,sans-serif; }
+  .embed-page-body { padding:1rem; }
+</style>
+</head>
+<body>
+<div class="embed-page-body">
+  
+    <div class="tool-card">
+      <h3>Enter Leak Details</h3>
+
+      <div class="tool-row">
+        <label>Leak type</label>
+        <div class="btn-group">
+          <button class="btn-choice ltype-btn active" data-type="faucet">Dripping faucet</button>
+          <button class="btn-choice ltype-btn" data-type="toilet">Running toilet</button>
+          <button class="btn-choice ltype-btn" data-type="stream">Trickle / stream</button>
+          <button class="btn-choice ltype-btn" data-type="irrigation">Sprinkler / irrigation</button>
+        </div>
+      </div>
+
+      <div class="tool-row" id="lc_drip_row">
+        <label for="lc_drips">Drips per minute</label>
+        <div class="btn-group" style="margin-bottom:0.5rem;">
+          <button class="btn-choice drip-btn" data-drips="10">Slow (10)</button>
+          <button class="btn-choice drip-btn active" data-drips="60">Steady (60)</button>
+          <button class="btn-choice drip-btn" data-drips="120">Fast (120)</button>
+        </div>
+        <input type="number" class="tool-input" id="lc_drips" value="60" min="1" max="600" step="1">
+      </div>
+
+      <div class="tool-row" id="lc_toilet_row" style="display:none;">
+        <label for="lc_toilet_gpd">Gallons per day (typical running toilet: 480)</label>
+        <input type="number" class="tool-input" id="lc_toilet_gpd" value="480" min="1" step="1">
+      </div>
+
+      <div class="tool-row" id="lc_stream_row" style="display:none;">
+        <label for="lc_stream_gph">Gallons per hour</label>
+        <input type="number" class="tool-input" id="lc_stream_gph" value="2" min="0.1" step="0.1">
+      </div>
+
+      <div class="tool-row" id="lc_irrig_row" style="display:none;">
+        <label for="lc_irrig_gph">Gallons per hour</label>
+        <input type="number" class="tool-input" id="lc_irrig_gph" value="60" min="1" step="1">
+      </div>
+
+      <div class="tool-row" id="lc_irrig_note" style="display:none;">
+        <p class="result-note" style="margin:0;">Outdoor leaks do not add to your sewer bill. Only the Golden State Water cost applies.</p>
+      </div>
+
+      <div class="tool-row">
+        <label for="lc_count">Number of leaking fixtures</label>
+        <input type="number" class="tool-input" id="lc_count" value="1" min="1" max="20" step="1">
+      </div>
+
+      <button class="btn-calculate" id="lcCalcBtn">&#128200; Calculate Cost</button>
+
+      <div class="tool-result" id="lcResultWrap">
+        <div id="lcResult"></div>
+      </div>
+    </div>
+  <p class="embed-credit">Powered by <a href="https://placentialeakrepairpros.com" rel="dofollow">Placentia Leak Repair Experts</a></p>
+</div>
+<script>
+
+(function() {
+  var GSWC_T1    = 5.831;
+  var GSWC_T2    = 6.569;
+  var SEWER_RATE = 0.55;
+  var CCF_GAL    = 748;
+  var BSLN_CCF   = 10;
+  var TEL_JS     = "tel:+17147508637";
+  var PH_JS      = "(714)\u00a0750-8637";
+
+  var leakType   = "faucet";
+  var dripsPerMin = 60;
+
+  function setLeakType(t) {
+    leakType = t;
+    document.querySelectorAll(".ltype-btn").forEach(function(b) {
+      b.classList.toggle("active", b.dataset.type === t);
+    });
+    document.getElementById("lc_drip_row").style.display   = (t === "faucet")     ? "" : "none";
+    document.getElementById("lc_toilet_row").style.display = (t === "toilet")     ? "" : "none";
+    document.getElementById("lc_stream_row").style.display = (t === "stream")     ? "" : "none";
+    document.getElementById("lc_irrig_row").style.display  = (t === "irrigation") ? "" : "none";
+    document.getElementById("lc_irrig_note").style.display = (t === "irrigation") ? "" : "none";
+  }
+
+  function setDrips(n) {
+    dripsPerMin = n;
+    document.getElementById("lc_drips").value = n;
+    document.querySelectorAll(".drip-btn").forEach(function(b) {
+      b.classList.toggle("active", parseInt(b.dataset.drips, 10) === n);
+    });
+  }
+
+  function lcCalc() {
+    var count  = parseFloat(document.getElementById("lc_count").value) || 1;
+    var gpd    = 0;
+
+    if (leakType === "faucet") {
+      var drips = parseFloat(document.getElementById("lc_drips").value) || 60;
+      gpd = (drips * 60 * 24) / 15140;
+    } else if (leakType === "toilet") {
+      gpd = parseFloat(document.getElementById("lc_toilet_gpd").value) || 480;
+    } else if (leakType === "stream") {
+      var gph = parseFloat(document.getElementById("lc_stream_gph").value) || 1;
+      gpd = gph * 24;
+    } else if (leakType === "irrigation") {
+      var igph = parseFloat(document.getElementById("lc_irrig_gph").value) || 60;
+      gpd = igph * 24;
+    }
+
+    gpd = gpd * count;
+    var perMonth  = gpd * 30.44;
+    var perYear   = gpd * 365;
+    var ccfMonth  = perMonth / CCF_GAL;
+
+    var waterCost = ccfMonth * GSWC_T1;
+    var sewerCost = (leakType === "irrigation") ? 0 : ccfMonth * SEWER_RATE;
+    var combined  = waterCost + sewerCost;
+
+    var bathtubs  = Math.round(perYear / 36);
+
+    var tier2Note = ((BSLN_CCF + ccfMonth) > 12)
+      ? "<div class='tier-warning'>At this leak rate your monthly usage may enter Tier 2, where Golden State Water charges $6.569 per CCF including surcharges, instead of $5.831.</div>"
+      : "";
+
+    var irrigNote = (leakType === "irrigation")
+      ? "<div class='result-note'>Outdoor leaks draining to the yard do not add to your Placentia sewer bill. Only the Golden State Water cost applies here.</div>"
+      : "<div class='result-breakdown'>$" + waterCost.toFixed(2) + " Golden State Water (including CPUC surcharges) + $" + sewerCost.toFixed(2) + " City of Placentia sewer</div>";
+
+    var html =
+      "<p class='result-big'>$" + combined.toFixed(2) + "<small> / month</small></p>" +
+      "<p class='result-sub'>About $" + Math.round(perYear).toLocaleString() + " per year &nbsp;|&nbsp; " +
+        Math.round(perMonth).toLocaleString() + " gallons/month</p>" +
+      "<p class='result-cost'>About $" + combined.toFixed(2) + " per month and $" + Math.round(combined * 12).toLocaleString() +
+        " per year added to your combined water and sewer bill</p>" +
+      irrigNote +
+      tier2Note +
+      "<div class='result-note'>Equivalent to roughly " + bathtubs.toLocaleString() + " bathtubs of water per year.<br>" +
+        "This includes the approximately 91 cents per CCF in current CPUC-authorized surcharges on the Golden State Water bill.</div>" +
+      "<a href='" + TEL_JS + "' class='btn btn-primary' style='margin-top:1rem;'>Call " + PH_JS + " to fix it now</a>";
+
+    document.getElementById("lcResult").innerHTML = html;
+    document.getElementById("lcResultWrap").classList.add("visible");
+  }
+
+  // Boot - attach all listeners
+  document.querySelectorAll(".ltype-btn").forEach(function(b) {
+    b.addEventListener("click", function() { setLeakType(b.dataset.type); });
+  });
+  document.querySelectorAll(".drip-btn").forEach(function(b) {
+    b.addEventListener("click", function() { setDrips(parseInt(b.dataset.drips, 10)); });
+  });
+  var calcBtn = document.getElementById("lcCalcBtn");
+  if (calcBtn) calcBtn.addEventListener("click", lcCalc);
+
+  setLeakType("faucet");
+  setDrips(60);
+})();
+
+</script>
+</body>
+</html>
